@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -6,16 +7,20 @@
 #include <sys/types.h>
 #include "i2c-util.h"
 
+#define I2C_RD    (0)
+#define I2C_WR    (1)
+
 int main(int argc, char **argv)
 {
     int fd;
-    char rw_val;
     unsigned r_w;
-    unsigned w_val;
     unsigned addr, reg;
 
-    if (argc < 5) {
-        printf("Usage:\n%s /dev/i2c-x addr reg r|w[0|1] [val]\n", argv[0]);
+    if (argc < 6) {
+        printf("Usage:\n"
+                "For Read: %s /dev/i2c-x addr reg 0 len\n"
+                "For Write: %s /dev/i2c-x addr reg 1 val [val-2] ... [val-n]\n",
+                argv[0], argv[0]);
         return 0;
     }
 
@@ -34,22 +39,25 @@ int main(int argc, char **argv)
     sscanf(argv[3], "%x", &reg);
     sscanf(argv[4], "%u", &r_w);
 
-    if (0 == r_w) {
-        i2c_read_reg(fd, addr, reg, &rw_val, 1);
-        printf("Read %s-%x reg %x, value = %x\n", argv[1], addr, reg, rw_val);
-    } else {
-        if (argc < 6) {
-            printf("Usage:\n%s /dev/i2c-x addr reg r|w[0|1] [val]\n", argv[0]);
-            return 0;
+    if (I2C_RD == r_w) {
+        int len = atoi(argv[5]);
+        char buf[len];
+        i2c_read_reg(fd, addr, reg, buf, len);
+
+        printf("Read %s-%x reg %x, value:\n", argv[1], addr, reg);
+        for (int i = 0; i < len; ++len) {
+            printf("%x ", buf[i]);
+        }
+        printf("\n");
+    }
+    else { // I2C_WR
+        int len = argc - 5;
+        char buf[len];
+        for (int i = 0; i < len; ++i) {
+            buf[i] = atoi(argv[5+i]);
         }
 
-        sscanf(argv[5], "%u", &w_val);
-        if ((w_val & ~0xff) != 0) {
-            printf("Error on written value %s\n", argv[5]);
-        }
-
-        rw_val = (char)w_val;
-        i2c_write_reg(fd, addr, reg, &rw_val, 1);
+        i2c_write_reg(fd, addr, reg, buf, len);
     }
 
     return 0;

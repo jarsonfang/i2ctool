@@ -25,14 +25,14 @@ int i2c_set(int fd, unsigned timeout, unsigned retry)
 }
 
 int i2c_read_reg(int fd,
-        unsigned short addr, unsigned char reg, char *buf, unsigned len)
+        unsigned short addr, unsigned char reg, char *buf, int len)
 {
     int ret = 0;
     char w_val = reg;
     struct i2c_msg messages[2];
     struct i2c_rdwr_ioctl_data packet;
 
-    if ((NULL == buf) || (0 == len)) {
+    if ((NULL == buf) || (len <= 0)) {
         return 0;
     }
 
@@ -60,13 +60,13 @@ int i2c_read_reg(int fd,
 }
 
 int i2c_write_reg(int fd,
-        unsigned short addr, unsigned char reg, char *buf, unsigned len)
+        unsigned short addr, unsigned char reg, char *buf, int len)
 {
     int ret = 0;
     struct i2c_msg msg;
     struct i2c_rdwr_ioctl_data packet;
 
-    if ((NULL == buf) || (0 == len)) {
+    if ((NULL == buf) || (len <= 0)) {
         return 0;
     }
 
