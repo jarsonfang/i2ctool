@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "i2c-util.h"
 
 #define I2C_DEFAULT_RETRY       (2)
@@ -24,8 +25,8 @@ int i2c_set(int fd, unsigned timeout, unsigned retry)
     return 0;
 }
 
-int i2c_read_reg(int fd,
-        unsigned short addr, unsigned char reg, unsigned char *buf, int len)
+int i2c_read_reg(int fd, unsigned short addr, unsigned char reg,
+        unsigned char *buf, int len)
 {
     if ((NULL == buf)
             || (len <= 0))
@@ -58,8 +59,8 @@ int i2c_read_reg(int fd,
     return len;
 }
 
-int i2c_write_reg(int fd,
-        unsigned short addr, unsigned char reg, unsigned char *buf, int len)
+int i2c_write_reg(int fd, unsigned short addr, unsigned char reg,
+        unsigned char *buf, int len)
 {
     if ((NULL == buf)
             || (len <= 0))
@@ -91,4 +92,50 @@ int i2c_write_reg(int fd,
     }
 
     return len;
+}
+
+int i2c_read_reg_delay(int fd, unsigned short addr, unsigned char reg,
+        unsigned char *buf, int len, int delay)
+{
+    if ((NULL == buf)
+            || (len <= 0))
+    {
+        return 0;
+    }
+
+    if (delay <= 0) {
+        return i2c_read_reg(fd, addr, reg, buf, len);
+    }
+
+    struct i2c_msg msg;
+    struct i2c_rdwr_ioctl_data packet;
+
+    packet.nmsgs = 1;
+    packet.msgs = &msg;
+
+    msg.addr = addr;
+    msg.flags = 0; // write
+    msg.len = 1;
+    msg.buf = (char *)&reg;
+
+    int ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
+    if (ret < 0) {
+        fprintf(stderr, "Error during I2C_RDWR ioctl: %s\n", strerror(ret));
+        return -1;
+    }
+
+    usleep(delay);
+
+    msg.addr = addr;
+    msg.flags = I2C_M_RD;
+    msg.len = len;
+    msg.buf = (char *)buf;
+
+    ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
+    if (ret < 0) {
+        fprintf(stderr, "Error during I2C_RDWR ioctl: %s\n", strerror(ret));
+        return -1;
+    }
+
+    return 0;
 }

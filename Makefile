@@ -1,6 +1,6 @@
 #CC		 := gcc
 CC		:= arm-none-linux-gnueabi-gcc
-CFLAGS	?= -std=c99 -pedantic -Wall
+CFLAGS	?= -D _BSD_SOURCE -std=c99 -pedantic -Wall
 LDFLAGS ?=
 
 PROGNAME = i2ctool
@@ -16,10 +16,11 @@ install: all
 	install -d $(DESTDIR)$(bindir)
 	install -m 0755 $(PROGNAME) $(DESTDIR)$(bindir)
 
-clean: $(OBJS)
-	@echo "Clean object files"
-	@rm -f $^
-	@rm -f $(PROGNAME)
-
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<
+
+clean:
+	@echo "Clean object files"
+	@rm -f *.o
+	@rm -f $(PROGNAME)
+
