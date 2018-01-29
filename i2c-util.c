@@ -25,16 +25,16 @@ int i2c_set(int fd, unsigned timeout, unsigned retry)
 }
 
 int i2c_read_reg(int fd,
-        unsigned short addr, unsigned char reg, char *buf, int len)
+        unsigned short addr, unsigned char reg, unsigned char *buf, int len)
 {
-    int ret = 0;
-    char w_val = reg;
-    struct i2c_msg messages[2];
-    struct i2c_rdwr_ioctl_data packet;
-
-    if ((NULL == buf) || (len <= 0)) {
+    if ((NULL == buf)
+            || (len <= 0))
+    {
         return 0;
     }
+
+    struct i2c_msg messages[2];
+    struct i2c_rdwr_ioctl_data packet;
 
     packet.nmsgs = 2;
     packet.msgs = messages;
@@ -42,58 +42,53 @@ int i2c_read_reg(int fd,
     messages[0].addr =addr;
     messages[0].flags = 0; // write
     messages[0].len = 1;
-    messages[0].buf = &w_val;
+    messages[0].buf = (char *)&reg;
 
     messages[1].addr = addr;
     messages[1].flags = I2C_M_RD;
     messages[1].len = len;
-    messages[1].buf = buf;
+    messages[1].buf = (char *)buf;
 
-    ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
+    int ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
     if (ret < 0) {
         fprintf(stderr, "Error during I2C_RDWR ioctl: %s\n", strerror(ret));
         return -1;
     }
 
-    printf("read salve:%02x reg:%02x\n", addr, reg);
     return len;
 }
 
 int i2c_write_reg(int fd,
-        unsigned short addr, unsigned char reg, char *buf, int len)
+        unsigned short addr, unsigned char reg, unsigned char *buf, int len)
 {
-    int ret = 0;
+    if ((NULL == buf)
+            || (len <= 0))
+    {
+        return 0;
+    }
+
     struct i2c_msg msg;
     struct i2c_rdwr_ioctl_data packet;
 
-    if ((NULL == buf) || (len <= 0)) {
-        return 0;
-    }
+    int pkg_len = len + 1;
+    unsigned char data[pkg_len];
+
+    data[0] = reg;
+    memcpy((data + 1), buf, len);
+
+    msg.addr = addr;
+    msg.flags = 0; // write
+    msg.len = pkg_len;
+    msg.buf = (char *)data;
 
     packet.nmsgs = 1;
     packet.msgs = &msg;
 
-    msg.addr = addr;
-    msg.flags = 0; // write
-    msg.len = len + 1;
-    msg.buf = (char *)malloc(msg.len);
-
-    if (NULL == msg.buf) {
-        return -1;
-    }
-
-    msg.buf[0] = reg;
-    memcpy(&(msg.buf[1]), buf, len);
-
-    ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
+    int ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
     if (ret < 0) {
         fprintf(stderr, "Error during I2C_RDWR ioctl: %s\n", strerror(ret));
-        free(msg.buf);
         return -1;
     }
-
-    free(msg.buf);
-    printf("write salve:%02x reg:%02x\n", addr, reg);
 
     return len;
 }
