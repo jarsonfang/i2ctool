@@ -1,23 +1,24 @@
-CC      ?= gcc
-CFLAGS  ?= -std=c99 -pedantic -Wall
+#CC		 := gcc
+CC		:= arm-none-linux-gnueabi-gcc
+CFLAGS	?= -std=c99 -pedantic -Wall
 LDFLAGS ?=
 
-OBJ = i2c-util.o main.o
 PROGNAME = i2ctool
+OBJS = main.o i2c-util.o
 
 exec_prefix ?= /usr
 bindir ?= $(exec_prefix)/bin
 
-all: $(OBJ)
-	$(CC) $(CFLAGS) -o $(PROGNAME) $(OBJ) $(LDFLAGS)
+all: $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGNAME) $(OBJS)
 
 install: all
 	install -d $(DESTDIR)$(bindir)
 	install -m 0755 $(PROGNAME) $(DESTDIR)$(bindir)
 
-clean: $(OBJ)
+clean: $(OBJS)
 	@echo "Clean object files"
-	@rm -f $<
+	@rm -f $^
 	@rm -f $(PROGNAME)
 
 %.o: %.c
