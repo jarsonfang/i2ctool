@@ -7,9 +7,9 @@
 #define I2C_DEFAULT_RETRY       (2)
 #define I2C_DEFAULT_TIMEOUT     (1)
 
-int i2c_set(int fd, unsigned timeout, unsigned retry)
+int i2c_set(int fd, unsigned int timeout, unsigned int retry)
 {
-    if (fd < 2) {// stdin: 0; stdout: 1; stderr: 2
+    if (fd < 2) { // stdin: 0; stdout: 1; stderr: 2
         fprintf(stderr, "Invalid file descriptor\n");
         return -1;
     }
@@ -42,48 +42,13 @@ int i2c_read_reg(int fd, unsigned short addr, unsigned char reg,
 
     messages[0].addr =addr;
     messages[0].flags = 0; // write
-    messages[0].len = 1;
+    messages[0].len = sizeof(reg);
     messages[0].buf = (char *)&reg;
 
     messages[1].addr = addr;
     messages[1].flags = I2C_M_RD;
     messages[1].len = len;
     messages[1].buf = (char *)buf;
-
-    int ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
-    if (ret < 0) {
-        fprintf(stderr, "Error during I2C_RDWR ioctl: %s\n", strerror(ret));
-        return -1;
-    }
-
-    return len;
-}
-
-int i2c_write_reg(int fd, unsigned short addr, unsigned char reg,
-        unsigned char *buf, int len)
-{
-    if ((NULL == buf)
-            || (len <= 0))
-    {
-        return 0;
-    }
-
-    struct i2c_msg msg;
-    struct i2c_rdwr_ioctl_data packet;
-
-    int pkg_len = len + 1;
-    unsigned char data[pkg_len];
-
-    data[0] = reg;
-    memcpy((data + 1), buf, len);
-
-    msg.addr = addr;
-    msg.flags = 0; // write
-    msg.len = pkg_len;
-    msg.buf = (char *)data;
-
-    packet.nmsgs = 1;
-    packet.msgs = &msg;
 
     int ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
     if (ret < 0) {
@@ -115,7 +80,7 @@ int i2c_read_reg_delay(int fd, unsigned short addr, unsigned char reg,
 
     msg.addr = addr;
     msg.flags = 0; // write
-    msg.len = 1;
+    msg.len = sizeof(reg);
     msg.buf = (char *)&reg;
 
     int ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
@@ -138,4 +103,39 @@ int i2c_read_reg_delay(int fd, unsigned short addr, unsigned char reg,
     }
 
     return 0;
+}
+
+int i2c_write_reg(int fd, unsigned short addr, unsigned char reg,
+        unsigned char *buf, int len)
+{
+    if ((NULL == buf)
+            || (len <= 0))
+    {
+        return 0;
+    }
+
+    struct i2c_msg msg;
+    struct i2c_rdwr_ioctl_data packet;
+
+    int pkg_len = len + sizeof(reg);
+    unsigned char data[pkg_len];
+
+    memcpy(data, &reg, sizeof(reg));
+    memcpy((data + sizeof(reg)), buf, len);
+
+    msg.addr = addr;
+    msg.flags = 0; // write
+    msg.len = pkg_len;
+    msg.buf = (char *)data;
+
+    packet.nmsgs = 1;
+    packet.msgs = &msg;
+
+    int ret = ioctl(fd, I2C_RDWR, (unsigned long)&packet);
+    if (ret < 0) {
+        fprintf(stderr, "Error during I2C_RDWR ioctl: %s\n", strerror(ret));
+        return -1;
+    }
+
+    return len;
 }
