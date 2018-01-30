@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     if (I2C_RD == r_w) {
         int len = atoi(argv[5]);
         unsigned char buf[len];
-        i2c_read_reg_delay(fd, addr, reg, buf, len, I2C_RD_DELAY);
+        i2c_read(fd, addr, reg, buf, len, I2C_RD_DELAY);
 #if 1
         printf("read salve: %#02x reg: %#02x\n", addr, reg);
         for (int i = 0; i < len; ++i) {
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
         }
         printf("\n");
 #endif
-        i2c_write_reg(fd, addr, reg, buf, len);
+        i2c_write(fd, addr, reg, buf, len);
     }
 
     return 0;
