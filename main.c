@@ -46,7 +46,7 @@ int main(int argc, char **argv)
         unsigned char buf[len];
         i2c_read(fd, addr, reg, buf, len, I2C_RD_DELAY);
 
-        printf("read salve: 0x%02x reg: 0x%02x\n", addr, reg);
+        printf("read salve: 0x%02x reg: 0x%02x, len: %d\n", addr, reg, len);
 
         int i = 0;
         for (; i < len; ++i) {
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
             buf[i] = strtol(argv[5+i], NULL, 16);
         }
 #if 1
-        printf("write salve: 0x%02x reg: 0x%02x\n", addr, reg);
+        printf("write salve: 0x%02x reg: 0x%02x, len: %d\n", addr, reg, len);
 
         int i = 0;
         for (; i < len; ++i) {
